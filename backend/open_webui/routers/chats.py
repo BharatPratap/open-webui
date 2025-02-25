@@ -1,3 +1,5 @@
+from datetime import datetime,timedelta
+
 import json
 import logging
 from typing import Optional
@@ -17,6 +19,7 @@ from open_webui.constants import ERROR_MESSAGES
 from open_webui.env import SRC_LOG_LEVELS
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
+import requests
 
 
 from open_webui.utils.auth import get_admin_user, get_verified_user
@@ -44,6 +47,51 @@ async def get_session_user_chat_list(
         return Chats.get_chat_title_id_list_by_user_id(user.id, skip=skip, limit=limit)
     else:
         return Chats.get_chat_title_id_list_by_user_id(user.id)
+    
+
+@router.get("/user-context")
+def get_user_context_by_id(user=Depends(get_verified_user)):
+    try:
+        url = "http://localhost:8000/event2vec/v1/vectorize-events"
+
+        payload = {
+                "events": [
+                    {
+                        "date": datetime.now().strftime("%Y-%m-%d"),
+                        "user_uuid": "b1771692-c4b9-4a44-84ef-0caee7aadda2",
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
+                        "application_label": "Code",
+                        "screen_title": "",
+                        "interacted_field": "",
+                        "interacted_value": ""
+                    }
+                ]
+            }
+        headers = {"Content-Type": "application/json"}
+
+        response = requests.request("POST", url, json=payload, headers=headers)
+
+        print(response)
+        
+        similar_events_url = "http://localhost:8000/event2vec/v1/get-similar-events"
+        payload = ""
+        params = {
+            "search_method": "timeline",
+            "user_uuid": "b1771692-c4b9-4a44-84ef-0caee7aadda2",
+            "top_n_embeddings": 12,
+            "similar_threshold": 0.5,
+            "start_time": (datetime.now() - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S"),
+            "end_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        response = requests.post(similar_events_url, params=params, data=payload).json()
+        log.info(response)
+        return response
+    except Exception as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=ERROR_MESSAGES.DEFAULT()
+        )
 
 
 ############################
@@ -362,7 +410,14 @@ async def update_chat_by_id(
 ):
     chat = Chats.get_chat_by_id_and_user_id(id, user.id)
     if chat:
+        # log.info("inside update_chat_by_id")
+        # form_data.chat["messages"][-2]["content"] = "Tell me a country name"
+        # msgs = form_data.chat["messages"]
+        # n = len(msgs)
+        # my_msg = msgs[n-2]
+        # log.info(my_msg)
         updated_chat = {**chat.chat, **form_data.chat}
+        log.info(f"Updating chat {id} with data: {updated_chat}")
         chat = Chats.update_chat_by_id(id, updated_chat)
         return ChatResponse(**chat.model_dump())
     else:

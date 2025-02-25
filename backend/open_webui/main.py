@@ -8,6 +8,7 @@ import shutil
 import sys
 import time
 import random
+from datetime import datetime, timedelta
 
 from contextlib import asynccontextmanager
 from urllib.parse import urlencode, parse_qs, urlparse
@@ -950,11 +951,23 @@ async def chat_completion(
     form_data: dict,
     user=Depends(get_verified_user),
 ):
+    # log.info("completions API called")
+    # log.info("inside chat_completion")
+    # msgs = form_data["messages"]
+    # n = len(msgs)
+    # my_msg = msgs[n-2]
+    # log.info(f"incoming message-> {my_msg}")
+    # form_data["messages"][-2]["content"] = "Tell me a country name"
+    # msgs = form_data["messages"]
+    # n = len(msgs)
+    # my_msg = msgs[n-2]
+    # log.info(f"outgoing message-> {my_msg}")
     if not request.app.state.MODELS:
         await get_all_models(request)
 
     model_item = form_data.pop("model_item", {})
     tasks = form_data.pop("background_tasks", None)
+    # log.info(f"tasks -> {tasks}")
 
     try:
         if not model_item.get("direct", False):

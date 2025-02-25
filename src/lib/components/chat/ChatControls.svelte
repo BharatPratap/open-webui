@@ -133,6 +133,10 @@
 	$: if (!chatId) {
 		closeHandler();
 	}
+
+	function handleUpdate(event) {
+    	params = { ...params, system: event.detail.system };
+  	}
 </script>
 
 <SvelteFlowProvider>
@@ -182,6 +186,7 @@
 							on:close={() => {
 								showControls.set(false);
 							}}
+							on:updateParams={handleUpdate}
 							{models}
 							bind:chatFiles
 							bind:params
@@ -269,6 +274,7 @@
 								on:close={() => {
 									showControls.set(false);
 								}}
+								on:updateParams={handleUpdate}
 								{models}
 								bind:chatFiles
 								bind:params

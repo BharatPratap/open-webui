@@ -8,13 +8,39 @@
 	import Valves from '$lib/components/chat/Controls/Valves.svelte';
 	import FileItem from '$lib/components/common/FileItem.svelte';
 	import Collapsible from '$lib/components/common/Collapsible.svelte';
+	import { writable } from "svelte/store";
 
 	import { user } from '$lib/stores';
+	import { fetchUserContext } from '$lib/apis/user-context';
+
 	export let models = [];
 	export let chatFiles = [];
 	export let params = {};
 
 	let showValves = false;
+	let loading = writable(false)
+
+	const callfetchUserContext = async () => {
+
+        try {
+			$loading = true
+            const response = await fetchUserContext(localStorage.token)
+			if (!response) {
+				throw new Error("Failed to fetch data");
+			}
+            const data = await response.json() || "Success!";
+			console.log(data)
+			console.log(data.similar_events)
+			console.log(data.user_events)
+			const combinedText = `\n\n--- User Events ---\n${data.user_events.join("\n")}\n\n--- Similar Events ---\n${data.similar_events.join("\n")}`;
+			console.log(combinedText)
+			dispatch("updateParams", { system: combinedText });
+        } catch (error) {
+			console.error("Error fetching user context:", error);
+		} finally {
+			$loading=false;
+		}
+    }
 </script>
 
 <div class=" dark:text-white">
@@ -80,6 +106,12 @@
 					/>
 				</div>
 			</Collapsible>
+
+			<div class="">
+				<button on:click={callfetchUserContext} disabled={$loading}>
+					{$loading ? "Loading..." : "Fetch user interactions"}
+				</button>
+			</div>
 
 			<hr class="my-2 border-gray-50 dark:border-gray-700/10" />
 
