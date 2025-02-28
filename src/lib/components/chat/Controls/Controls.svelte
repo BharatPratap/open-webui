@@ -16,7 +16,7 @@
 	export let models = [];
 	export let chatFiles = [];
 	export let params = {};
-
+	let lookbackMinutes = 5
 	let showValves = false;
 	let loading = writable(false)
 
@@ -24,7 +24,7 @@
 
         try {
 			$loading = true
-            const response = await fetchUserContext(localStorage.token)
+            const response = await fetchUserContext(localStorage.token, lookbackMinutes)
 			if (!response) {
 				throw new Error("Failed to fetch data");
 			}
@@ -32,7 +32,8 @@
 			console.log(data)
 			console.log(data.similar_events)
 			console.log(data.user_events)
-			const combinedText = `\n\n--- User Events ---\n${data.user_events.join("\n")}\n\n--- Similar Events ---\n${data.similar_events.join("\n")}`;
+			const combinedText = `\nBelow are the recent user interactions, which are provided in order of time  \n--- User Events ---\n${data.user_events.join("\n")}\n\n
+			These are the similar events done across user’s organization. These interactions are similar to the action performed by the user, in order of their similarity\n\n--- Similar Processes ---\n${data.similar_events.join("\n")}`;
 			console.log(combinedText)
 			dispatch("updateParams", { system: combinedText });
         } catch (error) {
@@ -100,15 +101,19 @@
 				<div class="" slot="content">
 					<textarea
 						bind:value={params.system}
-						class="w-full text-xs py-1.5 bg-transparent outline-hidden resize-none"
+						class="w-full text-xs py-3.0 bg-transparent outline-hidden resize-none"
 						rows="4"
 						placeholder={$i18n.t('Enter system prompt')}
 					/>
 				</div>
 			</Collapsible>
 
-			<div class="">
-				<button on:click={callfetchUserContext} disabled={$loading}>
+			<div class="flex py-0.5 w-full justify-between">
+				<div class='self-center text-left'>
+					<label class="">Lookback Time (Minutes):</label>
+    				<input type="number" bind:value={lookbackMinutes} min="1" placeholder=5/>
+				</div>
+				<button on:click={callfetchUserContext} disabled={$loading} class='self-center text-right'>
 					{$loading ? "Loading..." : "Fetch user interactions"}
 				</button>
 			</div>
