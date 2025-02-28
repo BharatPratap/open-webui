@@ -50,37 +50,17 @@ async def get_session_user_chat_list(
     
 
 @router.get("/user-context")
-def get_user_context_by_id(user=Depends(get_verified_user)):
+def get_user_context_by_id(lookback_minutes: int = 5,user=Depends(get_verified_user)):
     try:
-        url = "http://localhost:8000/event2vec/v1/vectorize-events"
-
-        payload = {
-                "events": [
-                    {
-                        "date": datetime.now().strftime("%Y-%m-%d"),
-                        "user_uuid": "b1771692-c4b9-4a44-84ef-0caee7aadda2",
-                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
-                        "application_label": "Code",
-                        "screen_title": "",
-                        "interacted_field": "",
-                        "interacted_value": ""
-                    }
-                ]
-            }
-        headers = {"Content-Type": "application/json"}
-
-        response = requests.request("POST", url, json=payload, headers=headers)
-
-        print(response)
-        
+        log.info(f"Lookback time is {lookback_minutes}")
         similar_events_url = "http://localhost:8000/event2vec/v1/get-similar-events"
         payload = ""
         params = {
             "search_method": "timeline",
             "user_uuid": "b1771692-c4b9-4a44-84ef-0caee7aadda2",
             "top_n_embeddings": 12,
-            "similar_threshold": 0.5,
-            "start_time": (datetime.now() - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S"),
+            "similar_threshold": 0.8,
+            "start_time": (datetime.now() - timedelta(minutes=lookback_minutes)).strftime("%Y-%m-%d %H:%M:%S"),
             "end_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
